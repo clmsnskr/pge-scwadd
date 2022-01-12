@@ -4,7 +4,6 @@ const fs = require("fs");
 const express = require("express");
 const app = express();
 const port = 3003;
-const qs = require("qs");
 
 const SMD_AUTH_BASE_URL = `https://sharemydataqa.pge.com/myAuthorization/`;
 const PGE_API_BASE_URL = `https://apiqa.pge.com`;
@@ -57,8 +56,6 @@ app.get("/OAuthCallback", async (req, res, next) => {
     redirect_uri: "https://www.isharefood.com/OAuthCallback",
   };
 
-  // console.log(qs.stringify(data));
-
   const result = await axios.post(
     withQuery(data)(`https://apiqa.pge.com/datacustodian/oauth/v2/token`),
     '',
@@ -79,7 +76,6 @@ app.get("/OAuthCallback", async (req, res, next) => {
   //   headers,
   // });
 });
-
 
 app.listen(port, (_) => {
   console.log(`App Listening at http://localhost:${port}`);
