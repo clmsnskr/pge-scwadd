@@ -3,7 +3,9 @@ const https = require('https');
 const fs = require('fs');
 const express = require('express');
 const app = express();
-const port = 3004;
+const port = 3003;
+const qs = require("qs");
+const R = require("ramda");
 
 const SMD_AUTH_BASE_URL = `https://sharemydataqa.pge.com/myAuthorization/`;
 const PGE_API_BASE_URL = `https://apiqa.pge.com`;
@@ -11,9 +13,14 @@ const PGE_API_BASE_URL = `https://apiqa.pge.com`;
 const QA_CLIENT_ID = '<SECRET_STRING>';
 const PROD_CLIENT_ID = '<SECRET_STRING>';
 
+const daysAgo = (num) =>
+  R.compose((today) => new Date(today).setDate(today.getDate() - num))(
+    new Date()
+  );
+
 const today = new Date();
-const twoDaysAgo = new Date(today).setDate(today.getDate() - 2);
-const oneYearAgo = new Date(today).setDate(today.getDate() - 365);
+const twoDaysAgo = daysAgo(2);
+const oneYearAgo = daysAgo(365);
 
 const smdAuthParams = {
   client_id: QA_CLIENT_ID,
