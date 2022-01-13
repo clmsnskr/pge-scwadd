@@ -24,7 +24,7 @@ const smdAuthParams = {
   client_id: CLIENT_ID,
   redirect_uri: "https://www.isharefood.com/OAuthCallback",
   response_type: "code",
-  login: "guest"
+  login: "guest",
 };
 
 const withQuery = (params) => (url) =>
@@ -56,6 +56,7 @@ app.get("/OAuthCallback", async (req, res, next) => {
 
   const result = await axios.post(
     withQuery(data)(`https://apiqa.pge.com/datacustodian/oauth/v2/token`),
+    // TODO: data payload could be necessary arg, currently works as params above ^^^
     "",
     { httpsAgent, headers }
   );
