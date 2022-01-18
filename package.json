@@ -16,7 +16,12 @@
     "nodemon": "2.0.15"
   },
   "dependencies": {
+    "@wmfs/xml2csv": "^1.24.0",
     "express": "4.17.2",
-    "ramda": "0.27.2"
+    "json2csv": "^5.0.6",
+    "ramda": "0.27.2",
+    "xml-csv": "^1.0.1",
+    "xml-formatter": "^2.6.0",
+    "xml2js": "^0.4.23"
   }
 }
