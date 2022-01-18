@@ -50,28 +50,40 @@ const withQuery = (params) => (url) =>
 
 const encode64 = (str) => Buffer.from(str, 'utf-8').toString('base64');
 
-// app.get('/', (req, res) => {
-// console.log(mockFirstQuarter);
-// var formattedXml = format(mockFirstQuarter);
-// console.log(formattedXml);
-// xml2csv(
-//   {
-//     xmlPath: './src/mockFirstQuarter.xml',
-//     // xmlStream: mockFirstQuarter,
-//     csvPath: './test_output.csv',
-//     rootXMLElement: 'ns1:entry',
-//     headerMap: [
-//       ['ns1:id', 'SA_UUID', 'string', 'ns1:entry'],
-//       ['ns1:updated', 'Interval Timestamp', 'string', 'ns1:entry'],
-//       // ['ns0:IntervalBlock', 'Interval Value', 'string', 'ns1:content'],
-//     ],
-//   },
-//   (err, info) => {
-//     res.send({ err, info });
-//     console.log(err, info);
-//   }
-// );
-// });
+app.get('/', (req, res) => {
+  // convert XML to JSON
+  xml2js.parseString(mockFirstQuarter, (err, result) => {
+    if (err) {
+      throw err;
+    }
+
+    const test = result['ns1:feed']['ns1:entry'].reduce(
+      (acc, item, index) => {
+        if (
+          item['ns1:content'] &&
+          item['ns1:content'][0]['ns0:IntervalBlock']
+        ) {
+          const intervalReading = item['ns1:content'][0][
+            'ns0:IntervalBlock'
+          ][0]['ns0:IntervalReading'].reduce((accIR, itemIR) => {
+            return [
+              ...accIR,
+              `${item['ns1:id'][0]['_']},${itemIR['ns0:timePeriod'][0]['ns0:start'][0]},${itemIR['ns0:value'][0]}`,
+            ];
+          }, []);
+          return [...acc, ...intervalReading];
+        }
+        return acc;
+      },
+      ['SA_UUID, Interval Timestamp, Interval Value']
+    );
+
+    fs.writeFileSync('test.csv', test.join('\n'));
+
+    console.log({ test });
+    res.send(test);
+  });
+});
 
 app.get('/', (req, res) => {
   const url = withQuery(smdAuthParams)(SMD_AUTH_BASE_URL);
@@ -145,49 +157,49 @@ app.get('/OAuthCallback', async (req, res, next) => {
     'published-min': ninetyOneDaysAgo,
   };
 
-  const firstQuarterEnergyUsageResponse = await axios.get(
-    withQuery(firstQuarterParams)(
-      `https://apiqa.pge.com/GreenButtonConnect/espi/1_1/resource/Batch/Subscription/${subscriptionId}/UsagePoint/${usagePointId}`
-    ),
-    { httpsAgent, headers }
-  );
+  // const firstQuarterEnergyUsageResponse = await axios.get(
+  //   withQuery(firstQuarterParams)(
+  //     `https://apiqa.pge.com/GreenButtonConnect/espi/1_1/resource/Batch/Subscription/${subscriptionId}/UsagePoint/${usagePointId}`
+  //   ),
+  //   { httpsAgent, headers }
+  // );
 
-  fs.writeFile(
-    './src/firstQuarter.xml',
-    firstQuarterEnergyUsageResponse.data,
-    (err) => {
-      if (err) {
-        console.error('failure writing file', err);
-        return;
-      }
-    }
-  );
+  // fs.writeFile(
+  //   './src/firstQuarter.xml',
+  //   firstQuarterEnergyUsageResponse.data,
+  //   (err) => {
+  //     if (err) {
+  //       console.error('failure writing file', err);
+  //       return;
+  //     }
+  //   }
+  // );
 
-  // SecondQuarter
-  const publishedMax = daysAgo(92);
-  const publishedMin = daysAgo(182);
-  const secondQuarterParams = {
-    'published-max': publishedMax,
-    'published-min': publishedMin,
-  };
+  // // SecondQuarter
+  // const publishedMax = daysAgo(92);
+  // const publishedMin = daysAgo(182);
+  // const secondQuarterParams = {
+  //   'published-max': publishedMax,
+  //   'published-min': publishedMin,
+  // };
 
-  const secondQuarterEnergyResponse = await axios.get(
-    withQuery(secondQuarterParams)(
-      `https://apiqa.pge.com/GreenButtonConnect/espi/1_1/resource/Batch/Subscription/${subscriptionId}/UsagePoint/${usagePointId}`
-    ),
-    { httpsAgent, headers }
-  );
+  // const secondQuarterEnergyResponse = await axios.get(
+  //   withQuery(secondQuarterParams)(
+  //     `https://apiqa.pge.com/GreenButtonConnect/espi/1_1/resource/Batch/Subscription/${subscriptionId}/UsagePoint/${usagePointId}`
+  //   ),
+  //   { httpsAgent, headers }
+  // );
 
-  fs.writeFile(
-    './src/secondQuarter.xml',
-    secondQuarterEnergyResponse.data,
-    (err) => {
-      if (err) {
-        console.error('failure writing file', err);
-        return;
-      }
-    }
-  );
+  // fs.writeFile(
+  //   './src/secondQuarter.xml',
+  //   secondQuarterEnergyResponse.data,
+  //   (err) => {
+  //     if (err) {
+  //       console.error('failure writing file', err);
+  //       return;
+  //     }
+  //   }
+  // );
 
   // // ThirdQuarter
   // const publishedMax = daysAgo(183);
@@ -242,27 +254,35 @@ app.get('/OAuthCallback', async (req, res, next) => {
   // );
 
   // display formatted xml for easier nesting visualizing
-  var formattedXml = format(firstQuarterEnergyUsageResponse.data);
-  console.log(formattedXml);
+  // var formattedXml = format(firstQuarterEnergyUsageResponse.data);
+  // console.log(formattedXml);
 
-  const outputDate = today.toISOString().replace(/T/, ' ').replace(/\..+/, '');
+  //   const outputDate = today.toISOString().replace(/T/, ' ').replace(/\..+/, '');
 
-  xml2csv(
-    {
-      xmlPath: './src/firstQuarter.xml',
-      csvPath: `./${subscriptionId}-${outputDate}.csv`,
-      rootXMLElement: 'ns1:entry',
-      headerMap: [
-        ['ns1:id', 'SA_UUID', 'string', 'ns1:entry'],
-        ['ns1:published', 'Interval Timestamp', 'string', 'ns1:entry'],
-        // ['ns0:IntervalBlock', 'Interval Value', 'string', 'ns1:content'],
-      ],
-    },
-    (err, info) => {
-      res.send({ err, info });
-      console.log(err, info);
-    }
-  );
+  //   xml2csv(
+  //     {
+  //       xmlPath: './src/firstQuarter.xml',
+  //       csvPath: `./${subscriptionId}-${outputDate}.csv`,
+  //       rootXMLElement: 'ns1:entry',
+  //       headerMap: [
+  //         ['ns1:id', 'SA_UUID', 'string', 'ns1:entry'],
+  //         [
+  //           'ns0:start',
+  //           'Interval Timestamp',
+  //           'string',
+  //           // 'ns1:content > ns0:IntervalBlock > ns0:IntervalReading',
+  //           'ns1:content',
+  //           'ns0: IntervalBlock',
+  //           'ns0: IntervalReading',
+  //         ],
+  //         ['ns0:value', 'Interval Value', 'string'],
+  //       ],
+  //     },
+  //     (err, info) => {
+  //       res.send({ err, info });
+  //       console.log(err, info);
+  //     }
+  //   );
 });
 
 app.listen(port, (_) => {
