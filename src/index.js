@@ -7,7 +7,16 @@ const port = 3003;
 const qs = require('qs');
 const R = require('ramda');
 
-const mockFirstQuarter = fs.readFileSync('./src/mockFirstQuarter.xml', {
+const mockFirstQuarter = fs.readFileSync('./src/firstQuarter.xml', {
+  encoding: 'utf-8',
+});
+const mockSecondQuarter = fs.readFileSync('./src/secondQuarter.xml', {
+  encoding: 'utf-8',
+});
+const mockThirdQuarter = fs.readFileSync('./src/thirdQuarter.xml', {
+  encoding: 'utf-8',
+});
+const mockFourthQuarter = fs.readFileSync('./src/fourthQuarter.xml', {
   encoding: 'utf-8',
 });
 
@@ -51,13 +60,18 @@ const withQuery = (params) => (url) =>
 const encode64 = (str) => Buffer.from(str, 'utf-8').toString('base64');
 
 app.get('/', (req, res) => {
+  /* Start of mock testing section, this work will be moved to API calls later */
+
+  const outputDate = today.toISOString().replace(/T/, ' ').replace(/\..+/, '');
+
   // convert XML to JSON
+  // First quarter API call
   xml2js.parseString(mockFirstQuarter, (err, result) => {
     if (err) {
       throw err;
     }
 
-    const test = result['ns1:feed']['ns1:entry'].reduce(
+    const firstCall = result['ns1:feed']['ns1:entry'].reduce(
       (acc, item, index) => {
         if (
           item['ns1:content'] &&
@@ -78,211 +92,224 @@ app.get('/', (req, res) => {
       ['SA_UUID, Interval Timestamp, Interval Value']
     );
 
-    fs.writeFileSync('test.csv', test.join('\n'));
-
-    console.log({ test });
-    res.send(test);
-  });
-});
-
-app.get('/', (req, res) => {
-  const url = withQuery(smdAuthParams)(SMD_AUTH_BASE_URL);
-  res.redirect(url);
-});
-
-app.get('/OAuthCallback', async (req, res, next) => {
-  const headers = {
-    'Content-Type': 'application/json',
-    Authorization: `Basic ${encode64(`${CLIENT_ID}:${CLIENT_SECRET}`)}`,
-  };
-
-  const httpsAgent = new https.Agent({
-    cert: fs.readFileSync('ssl/certs/isharefood.com/certificate.crt'),
-    key: fs.readFileSync('ssl/private/isharefood.com/private.key'),
+    fs.writeFileSync(`${subscriptionId}-${outputDate}`, firstCall.join('\n'));
   });
 
-  const data = {
-    grant_type: 'authorization_code',
-    code: req.query.code,
-    redirect_uri: 'https://www.isharefood.com/OAuthCallback',
-  };
+  // convert XML to JSON
+  // Second quarter API call
+  xml2js.parseString(mockSecondQuarter, (err, result) => {
+    if (err) {
+      throw err;
+    }
 
-  const result = await axios.post(
-    withQuery(data)(`https://apiqa.pge.com/datacustodian/oauth/v2/token`),
-    // TODO: data payload could be necessary arg, currently works as params above ^^^
-    '',
-    { httpsAgent, headers }
-  );
-  req.data = result.data;
-  next();
-});
+    const secondCall = result['ns1:feed']['ns1:entry'].reduce(
+      (acc, item, index) => {
+        if (
+          item['ns1:content'] &&
+          item['ns1:content'][0]['ns0:IntervalBlock']
+        ) {
+          const intervalReading = item['ns1:content'][0][
+            'ns0:IntervalBlock'
+          ][0]['ns0:IntervalReading'].reduce((accIR, itemIR) => {
+            return [
+              ...accIR,
+              `${item['ns1:id'][0]['_']},${itemIR['ns0:timePeriod'][0]['ns0:start'][0]},${itemIR['ns0:value'][0]}`,
+            ];
+          }, []);
+          return [...acc, ...intervalReading];
+        }
+        return acc;
+      },
+      []
+    );
 
-app.get('/OAuthCallback', async (req, res, next) => {
-  const accessToken = req.data.access_token;
-
-  const headers = {
-    Authorization: `Bearer ${accessToken}`,
-  };
-
-  const httpsAgent = new https.Agent({
-    cert: fs.readFileSync('ssl/certs/isharefood.com/certificate.crt'),
-    key: fs.readFileSync('ssl/private/isharefood.com/private.key'),
+    fs.appendFileSync(`${subscriptionId}-${outputDate}`, secondCall.join('\n'));
   });
 
-  const subscriptionId = req.data.resourceURI.replace(
-    'https://apiqa.pge.com/GreenButtonConnect/espi/1_1/resource/Batch/Subscription/',
-    ''
-  );
+  // convert XML to JSON
+  // Third quarter API call
+  xml2js.parseString(mockThirdQuarter, (err, result) => {
+    if (err) {
+      throw err;
+    }
 
-  const usagePointIdResponse = await axios.get(
-    `https://apiqa.pge.com/GreenButtonConnect/espi/1_1/resource/Subscription/${subscriptionId}/UsagePoint`,
-    { httpsAgent, headers }
-  );
+    const thirdCall = result['ns1:feed']['ns1:entry'].reduce(
+      (acc, item, index) => {
+        if (
+          item['ns1:content'] &&
+          item['ns1:content'][0]['ns0:IntervalBlock']
+        ) {
+          const intervalReading = item['ns1:content'][0][
+            'ns0:IntervalBlock'
+          ][0]['ns0:IntervalReading'].reduce((accIR, itemIR) => {
+            return [
+              ...accIR,
+              `${item['ns1:id'][0]['_']},${itemIR['ns0:timePeriod'][0]['ns0:start'][0]},${itemIR['ns0:value'][0]}`,
+            ];
+          }, []);
+          return [...acc, ...intervalReading];
+        }
+        return acc;
+      },
+      []
+    );
 
-  const usagePointId = usagePointIdResponse.data.match(
-    /\/UsagePoint\/([0-9]+)/
-  )[1];
+    fs.appendFileSync(`${subscriptionId}-${outputDate}`, thirdCall.join('\n'));
+  });
 
-  // const params = {
-  //   'published-max': twoDaysAgo,
-  //   'published-min': oneYearAgo,
-  // };
+  // convert XML to JSON
+  // Fourth quarter API call
+  xml2js.parseString(mockFourthQuarter, (err, result) => {
+    if (err) {
+      throw err;
+    }
 
-  // Splitting annual usage request into quarters
-  // FirstQuarter
-  const twoDaysAgo = daysAgo(2);
-  const ninetyOneDaysAgo = daysAgo(91);
-  const firstQuarterParams = {
-    'published-max': twoDaysAgo,
-    'published-min': ninetyOneDaysAgo,
-  };
+    const fourthCall = result['ns1:feed']['ns1:entry'].reduce(
+      (acc, item, index) => {
+        if (
+          item['ns1:content'] &&
+          item['ns1:content'][0]['ns0:IntervalBlock']
+        ) {
+          const intervalReading = item['ns1:content'][0][
+            'ns0:IntervalBlock'
+          ][0]['ns0:IntervalReading'].reduce((accIR, itemIR) => {
+            return [
+              ...accIR,
+              `${item['ns1:id'][0]['_']},${itemIR['ns0:timePeriod'][0]['ns0:start'][0]},${itemIR['ns0:value'][0]}`,
+            ];
+          }, []);
+          return [...acc, ...intervalReading];
+        }
+        return acc;
+      },
+      []
+    );
 
-  // const firstQuarterEnergyUsageResponse = await axios.get(
-  //   withQuery(firstQuarterParams)(
-  //     `https://apiqa.pge.com/GreenButtonConnect/espi/1_1/resource/Batch/Subscription/${subscriptionId}/UsagePoint/${usagePointId}`
-  //   ),
-  //   { httpsAgent, headers }
-  // );
+    fs.appendFileSync(`${subscriptionId}-${outputDate}`, fourthCall.join('\n'));
+    /* End of mock testing section, this work will be moved to API calls later */
 
-  // fs.writeFile(
-  //   './src/firstQuarter.xml',
-  //   firstQuarterEnergyUsageResponse.data,
-  //   (err) => {
-  //     if (err) {
-  //       console.error('failure writing file', err);
-  //       return;
-  //     }
-  //   }
-  // );
+    const url = withQuery(smdAuthParams)(SMD_AUTH_BASE_URL);
+    res.redirect(url);
+  });
 
-  // // SecondQuarter
-  // const publishedMax = daysAgo(92);
-  // const publishedMin = daysAgo(182);
-  // const secondQuarterParams = {
-  //   'published-max': publishedMax,
-  //   'published-min': publishedMin,
-  // };
+  app.get('/OAuthCallback', async (req, res, next) => {
+    const headers = {
+      'Content-Type': 'application/json',
+      Authorization: `Basic ${encode64(`${CLIENT_ID}:${CLIENT_SECRET}`)}`,
+    };
 
-  // const secondQuarterEnergyResponse = await axios.get(
-  //   withQuery(secondQuarterParams)(
-  //     `https://apiqa.pge.com/GreenButtonConnect/espi/1_1/resource/Batch/Subscription/${subscriptionId}/UsagePoint/${usagePointId}`
-  //   ),
-  //   { httpsAgent, headers }
-  // );
+    const httpsAgent = new https.Agent({
+      cert: fs.readFileSync('ssl/certs/isharefood.com/certificate.crt'),
+      key: fs.readFileSync('ssl/private/isharefood.com/private.key'),
+    });
 
-  // fs.writeFile(
-  //   './src/secondQuarter.xml',
-  //   secondQuarterEnergyResponse.data,
-  //   (err) => {
-  //     if (err) {
-  //       console.error('failure writing file', err);
-  //       return;
-  //     }
-  //   }
-  // );
+    const data = {
+      grant_type: 'authorization_code',
+      code: req.query.code,
+      redirect_uri: 'https://www.isharefood.com/OAuthCallback',
+    };
 
-  // // ThirdQuarter
-  // const publishedMax = daysAgo(183);
-  // const publishedMin = daysAgo(274);
-  // const thirdQuarterParams = {
-  //   'published-max': publishedMax,
-  //   'published-min': publishedMin,
-  // };
+    const result = await axios.post(
+      withQuery(data)(`https://apiqa.pge.com/datacustodian/oauth/v2/token`),
+      // TODO: data payload could be necessary arg, currently works as params above ^^^
+      '',
+      { httpsAgent, headers }
+    );
+    req.data = result.data;
+    next();
+  });
 
-  // const secondQuarterEnergyResponse = await axios.get(
-  //   withQuery(thirdQuarterParams)(
-  //     `https://apiqa.pge.com/GreenButtonConnect/espi/1_1/resource/Batch/Subscription/${subscriptionId}/UsagePoint/${usagePointId}`
-  //   ),
-  //   { httpsAgent, headers }
-  // );
+  app.get('/OAuthCallback', async (req, res, next) => {
+    const accessToken = req.data.access_token;
 
-  // fs.writeFile(
-  //   './src/thirdQuarter.xml',
-  //   thirdQuarterEnergyResponse.data,
-  //   (err) => {
-  //     if (err) {
-  //       console.error('failure writing file', err);
-  //       return;
-  //     }
-  //   }
-  // );
+    const headers = {
+      Authorization: `Bearer ${accessToken}`,
+    };
 
-  // // FourthQuarter
-  // const publishedMax = daysAgo(274);
-  // const publishedMin = daysAgo(365);
-  // const fourthQuarterParams = {
-  //   'published-max': publishedMax,
-  //   'published-min': publishedMin,
-  // };
+    const httpsAgent = new https.Agent({
+      cert: fs.readFileSync('ssl/certs/isharefood.com/certificate.crt'),
+      key: fs.readFileSync('ssl/private/isharefood.com/private.key'),
+    });
 
-  // const fourthQuarterEnergyResponse = await axios.get(
-  //   withQuery(fourthQuarterParams)(
-  //     `https://apiqa.pge.com/GreenButtonConnect/espi/1_1/resource/Batch/Subscription/${subscriptionId}/UsagePoint/${usagePointId}`
-  //   ),
-  //   { httpsAgent, headers }
-  // );
+    const subscriptionId = req.data.resourceURI.replace(
+      'https://apiqa.pge.com/GreenButtonConnect/espi/1_1/resource/Batch/Subscription/',
+      ''
+    );
 
-  // fs.writeFile(
-  //   './src/fourthQuarter.xml',
-  //   fourthQuarterEnergyResponse.data,
-  //   (err) => {
-  //     if (err) {
-  //       console.error('failure writing file', err);
-  //       return;
-  //     }
-  //   }
-  // );
+    const usagePointIdResponse = await axios.get(
+      `https://apiqa.pge.com/GreenButtonConnect/espi/1_1/resource/Subscription/${subscriptionId}/UsagePoint`,
+      { httpsAgent, headers }
+    );
+
+    const usagePointId = usagePointIdResponse.data.match(
+      /\/UsagePoint\/([0-9]+)/
+    )[1];
+
+    // Splitting annual usage request into quarters
+    // FirstQuarter
+    // const twoDaysAgo = daysAgo(2);
+    // const ninetyOneDaysAgo = daysAgo(91);
+    // const firstQuarterParams = {
+    //   'published-max': twoDaysAgo,
+    //   'published-min': ninetyOneDaysAgo,
+    // };
+
+    // const firstQuarterEnergyUsageResponse = await axios.get(
+    //   withQuery(firstQuarterParams)(
+    //     `https://apiqa.pge.com/GreenButtonConnect/espi/1_1/resource/Batch/Subscription/${subscriptionId}/UsagePoint/${usagePointId}`
+    //   ),
+    //   { httpsAgent, headers }
+    // );
+
+    // // SecondQuarter
+    // const publishedMax = daysAgo(92);
+    // const publishedMin = daysAgo(182);
+    // const secondQuarterParams = {
+    //   'published-max': publishedMax,
+    //   'published-min': publishedMin,
+    // };
+
+    // const secondQuarterEnergyResponse = await axios.get(
+    //   withQuery(secondQuarterParams)(
+    //     `https://apiqa.pge.com/GreenButtonConnect/espi/1_1/resource/Batch/Subscription/${subscriptionId}/UsagePoint/${usagePointId}`
+    //   ),
+    //   { httpsAgent, headers }
+    // );
+
+    // // ThirdQuarter
+    // const publishedMax = daysAgo(183);
+    // const publishedMin = daysAgo(274);
+    // const thirdQuarterParams = {
+    //   'published-max': publishedMax,
+    //   'published-min': publishedMin,
+    // };
+
+    // const thirdQuarterEnergyResponse = await axios.get(
+    //   withQuery(thirdQuarterParams)(
+    //     `https://apiqa.pge.com/GreenButtonConnect/espi/1_1/resource/Batch/Subscription/${subscriptionId}/UsagePoint/${usagePointId}`
+    //   ),
+    //   { httpsAgent, headers }
+    // );
+
+    // FourthQuarter
+    // const publishedMax = daysAgo(274);
+    // const publishedMin = daysAgo(365);
+    // const fourthQuarterParams = {
+    //   'published-max': publishedMax,
+    //   'published-min': publishedMin,
+    // };
+
+    // const fourthQuarterEnergyResponse = await axios.get(
+    //   withQuery(fourthQuarterParams)(
+    //     `https://apiqa.pge.com/GreenButtonConnect/espi/1_1/resource/Batch/Subscription/${subscriptionId}/UsagePoint/${usagePointId}`
+    //   ),
+    //   { httpsAgent, headers }
+    // );
+  });
 
   // display formatted xml for easier nesting visualizing
   // var formattedXml = format(firstQuarterEnergyUsageResponse.data);
   // console.log(formattedXml);
-
-  //   const outputDate = today.toISOString().replace(/T/, ' ').replace(/\..+/, '');
-
-  //   xml2csv(
-  //     {
-  //       xmlPath: './src/firstQuarter.xml',
-  //       csvPath: `./${subscriptionId}-${outputDate}.csv`,
-  //       rootXMLElement: 'ns1:entry',
-  //       headerMap: [
-  //         ['ns1:id', 'SA_UUID', 'string', 'ns1:entry'],
-  //         [
-  //           'ns0:start',
-  //           'Interval Timestamp',
-  //           'string',
-  //           // 'ns1:content > ns0:IntervalBlock > ns0:IntervalReading',
-  //           'ns1:content',
-  //           'ns0: IntervalBlock',
-  //           'ns0: IntervalReading',
-  //         ],
-  //         ['ns0:value', 'Interval Value', 'string'],
-  //       ],
-  //     },
-  //     (err, info) => {
-  //       res.send({ err, info });
-  //       console.log(err, info);
-  //     }
-  //   );
 });
 
 app.listen(port, (_) => {
