@@ -39,6 +39,7 @@ const withQuery = (params) => (url) =>
   `${url}${Object.keys(params).length ? '?' : ''}${qs.stringify(params)}`;
 
 const encode64 = (str) => Buffer.from(str, 'utf-8').toString('base64');
+const decode64 = (str) => Buffer.from(str, 'base64').toString('utf-8');
 
 app.get('/', (req, res) => {
   const url = withQuery(smdAuthParams)(SMD_AUTH_BASE_URL);
@@ -165,7 +166,9 @@ app.get('/OAuthCallback', async (req, res, next) => {
     thirdQuarterEnergyResponse,
     fourthQuarterEnergyResponse,
   ]).then((values) => {
-    const csvContent = ['SA_UUID, Interval Timestamp, Interval Value'];
+    const csvContent = [
+      'SA_UUID, Interval Timestamp, Delivered From Grid Value (Wh), Back To Grid Value (Wh)',
+    ];
     values.map((value, index) => {
       // convert XML to JSON
       xml2js.parseString(value.data, (err, result) => {
@@ -179,18 +182,30 @@ app.get('/OAuthCallback', async (req, res, next) => {
               item['ns1:content'] &&
               item['ns1:content'][0]['ns0:IntervalBlock']
             ) {
+              // retrieves energyFlowIndicator to determine if interval value is DeliveredFromGrid OR BackToGrid
+              const energyFlowUrl = item['ns1:link'][0]['$'].href;
+              const energyFlowIndicatorString = energyFlowUrl.split('/')[12];
+              const firstBufferString = decode64(energyFlowIndicatorString);
+              const secondBufferString = decode64(firstBufferString);
+              const energyFlowIndicator = R.compose(
+                (arr) => arr[arr.length - 1]
+              )(secondBufferString.split(':'));
+
               const intervalReading = item['ns1:content'][0][
                 'ns0:IntervalBlock'
               ][0]['ns0:IntervalReading'].reduce((accIR, itemIR) => {
-                const date = new Date(0);
-                const newDate = date.toUTCString(
-                  itemIR['ns0:timePeriod'][0]['ns0:start'][0]
-                );
+                const itemStartTime =
+                  itemIR['ns0:timePeriod'][0]['ns0:start'][0];
+                const itemValue = itemIR['ns0:value'][0];
 
-                return [
-                  ...accIR,
-                  `${subscriptionId},${newDate},${itemIR['ns0:value'][0]}`,
-                ];
+                const itemByStartTime = {
+                  start: itemStartTime,
+                  ...(energyFlowIndicator === '19'
+                    ? { generated: itemValue }
+                    : { delivered: itemValue }),
+                };
+
+                return [...accIR, itemByStartTime];
               }, []);
               return [...acc, ...intervalReading];
             }
@@ -198,7 +213,23 @@ app.get('/OAuthCallback', async (req, res, next) => {
           },
           []
         );
-        csvContent.push(...response);
+
+        const groupedByStart = R.groupBy(({ start }) => start)(response);
+        const csvLines = Object.keys(groupedByStart).map((startTime) => {
+          const entry = groupedByStart[startTime];
+          const newDate = new Date(+startTime * 1000);
+
+          const entryObj = {
+            ...entry[0],
+            ...entry[1],
+          };
+
+          return `${subscriptionId}, ${newDate}, ${
+            +entryObj.delivered * 10 ** -3
+          }, ${+entryObj.generated * 10 ** -3}`;
+        });
+
+        csvContent.push(...csvLines);
 
         const outputDate = today
           .toISOString()
@@ -207,19 +238,23 @@ app.get('/OAuthCallback', async (req, res, next) => {
 
         if (index === 0) {
           fs.writeFileSync(
-            `${subscriptionId}-${outputDate}`,
+            `${subscriptionId}-${outputDate}.csv`,
             csvContent.join('\n')
           );
         } else {
           fs.appendFileSync(
-            `${subscriptionId}-${outputDate}`,
+            `${subscriptionId}-${outputDate}.csv`,
             csvContent.join('\n')
           );
         }
       });
     });
-    res.send('created csv succesfully');
+    next();
   });
+});
+
+app.use((req, res) => {
+  res.send('created csv succesfully');
 });
 
 app.listen(port, (_) => {
