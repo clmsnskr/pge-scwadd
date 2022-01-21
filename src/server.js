@@ -6,6 +6,7 @@ const app = express();
 const port = 3003;
 const qs = require('qs');
 const R = require('ramda');
+const path = require('path');
 
 const xml2js = require('xml2js');
 
@@ -30,7 +31,7 @@ const today = new Date();
 
 const smdAuthParams = {
   client_id: CLIENT_ID,
-  redirect_uri: 'https://www.isharefood.com/OAuthCallback',
+  redirect_uri: 'http://scwadd.isharefood.com/OAuthCallback',
   response_type: 'code',
   login: 'guest',
 };
@@ -60,7 +61,7 @@ app.get('/OAuthCallback', async (req, res, next) => {
   const data = {
     grant_type: 'authorization_code',
     code: req.query.code,
-    redirect_uri: 'https://www.isharefood.com/OAuthCallback',
+    redirect_uri: 'http://scwadd.isharefood.com/OAuthCallback',
   };
 
   const result = await axios.post(
@@ -237,13 +238,14 @@ app.get('/OAuthCallback', async (req, res, next) => {
           .replace(/\..+/, '');
 
         if (index === 0) {
+          if (!fs.existsSync('output')) fs.mkdirSync('output');
           fs.writeFileSync(
-            `${subscriptionId}-${outputDate}.csv`,
+            `output/${subscriptionId}-${outputDate}.csv`,
             csvContent.join('\n')
           );
         } else {
           fs.appendFileSync(
-            `${subscriptionId}-${outputDate}.csv`,
+            `output/${subscriptionId}-${outputDate}.csv`,
             csvContent.join('\n')
           );
         }
