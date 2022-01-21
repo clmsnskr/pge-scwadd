@@ -5,7 +5,7 @@
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "dev": "nodemon src/index.js"
+    "dev": "nodemon src/server.js"
   },
   "author": "",
   "license": "MIT",
@@ -16,8 +16,10 @@
     "nodemon": "2.0.15"
   },
   "dependencies": {
-    "express": "4.17.2",
+    "express": "^4.17.2",
     "ramda": "0.27.2",
+    "react": "^16.14.0",
+    "react-dom": "^16.14.0",
     "xml2js": "^0.4.23"
   }
 }
