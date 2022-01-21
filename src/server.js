@@ -162,10 +162,10 @@ app.get('/OAuthCallback', async (req, res, next) => {
   );
 
   Promise.all([
-    firstQuarterEnergyUsageResponse,
-    secondQuarterEnergyResponse,
-    thirdQuarterEnergyResponse,
     fourthQuarterEnergyResponse,
+    thirdQuarterEnergyResponse,
+    secondQuarterEnergyResponse,
+    firstQuarterEnergyUsageResponse,
   ]).then((values) => {
     const csvContent = [
       'SA_UUID, Interval Timestamp, Delivered From Grid Value (Wh), Back To Grid Value (Wh)',
@@ -230,23 +230,24 @@ app.get('/OAuthCallback', async (req, res, next) => {
           }, ${+entryObj.generated * 10 ** -3}`;
         });
 
-        csvContent.push(...csvLines);
-
         const outputDate = today
           .toISOString()
           .replace(/T/, ' ')
           .replace(/\..+/, '');
 
         if (index === 0) {
+          csvContent.push(...csvLines);
           if (!fs.existsSync('output')) fs.mkdirSync('output');
           fs.writeFileSync(
             `output/${subscriptionId}-${outputDate}.csv`,
             csvContent.join('\n')
           );
         } else {
+          //creates new line before appending values
+          fs.appendFileSync(`output/${subscriptionId}-${outputDate}.csv`, '\n');
           fs.appendFileSync(
             `output/${subscriptionId}-${outputDate}.csv`,
-            csvContent.join('\n')
+            csvLines.join('\n')
           );
         }
       });
@@ -256,7 +257,7 @@ app.get('/OAuthCallback', async (req, res, next) => {
 });
 
 app.use((req, res) => {
-  res.send('created csv succesfully');
+  res.sendFile(path.join(__dirname, '../public/index.html'));
 });
 
 app.listen(port, (_) => {
