@@ -70,7 +70,23 @@ app.get('/OAuthCallback', async (req, res, next) => {
     '',
     { httpsAgent, headers }
   );
-  req.data = result.data;
+
+  //request for client_access_token to be used in destroying session
+  const clientCredentialsData = {
+    grant_type: 'client_credentials',
+  };
+  const clientAccessTokenResponse = await axios.post(
+    withQuery(clientCredentialsData)(
+      `https://apiqa.pge.com/datacustodian/oauth/v2/token`
+    ),
+    '',
+    { httpsAgent, headers }
+  );
+
+  req.data = {
+    ...result.data,
+    clientAccessToken: clientAccessTokenResponse.data.client_access_token,
+  };
   next();
 });
 
@@ -256,7 +272,26 @@ app.get('/OAuthCallback', async (req, res, next) => {
   });
 });
 
-app.use((req, res) => {
+app.use(async (req, res, next) => {
+  // For data access client level URI endpoints, the bearer CLIENT ACCESS TOKEN is required
+  const clientAccessToken = req.data.clientAccessToken;
+  const headers = {
+    Authorization: `Bearer ${clientAccessToken}`,
+  };
+  const httpsAgent = new https.Agent({
+    cert: fs.readFileSync('ssl/certs/isharefood.com/certificate.crt'),
+    key: fs.readFileSync('ssl/private/isharefood.com/private.key'),
+  });
+  try {
+    await axios.delete(`${req.data.authorizationURI}`, {
+      httpsAgent,
+      headers,
+    });
+  } catch (e) {
+    console.log(e, 'There was an error');
+  }
+
+  // user confirmation page
   res.sendFile(path.join(__dirname, '../public/index.html'));
 });
 
