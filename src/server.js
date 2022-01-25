@@ -272,8 +272,6 @@ app.get('/OAuthCallback', async (req, res, next) => {
   });
 });
 
-// app.get('/OAuthCallback', async (req, res, next) => {
-// app.use('/OAuthCallback', async (req, res, next) => {
 app.use('/OAuthCallback', async (req, res, next) => {
   // For data access client level URI endpoints, the bearer CLIENT ACCESS TOKEN is required
   const clientAccessToken = req.data?.clientAccessToken;
