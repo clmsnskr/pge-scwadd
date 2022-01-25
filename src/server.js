@@ -272,9 +272,12 @@ app.get('/OAuthCallback', async (req, res, next) => {
   });
 });
 
-app.use(async (req, res, next) => {
+// app.get('/OAuthCallback', async (req, res, next) => {
+// app.use('/OAuthCallback', async (req, res, next) => {
+app.use('/OAuthCallback', async (req, res, next) => {
   // For data access client level URI endpoints, the bearer CLIENT ACCESS TOKEN is required
-  const clientAccessToken = req.data.clientAccessToken;
+  const clientAccessToken = req.data?.clientAccessToken;
+  const authURI = req.data?.authorizationURI;
   const headers = {
     Authorization: `Bearer ${clientAccessToken}`,
   };
@@ -282,13 +285,11 @@ app.use(async (req, res, next) => {
     cert: fs.readFileSync('ssl/certs/isharefood.com/certificate.crt'),
     key: fs.readFileSync('ssl/private/isharefood.com/private.key'),
   });
-  try {
-    await axios.delete(`${req.data.authorizationURI}`, {
+  if (authURI) {
+    await axios.delete(authURI, {
       httpsAgent,
       headers,
     });
-  } catch (e) {
-    console.log(e, 'There was an error');
   }
 
   // user confirmation page
