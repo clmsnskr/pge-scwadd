@@ -98,8 +98,8 @@ app.get('/OAuthCallback', async (req, res, next) => {
   };
 
   const httpsAgent = new https.Agent({
-    cert: fs.readFileSync('ssl/certs/isharefood.com/certificate.crt'),
-    key: fs.readFileSync('ssl/private/isharefood.com/private.key'),
+    cert: fs.readFileSync('ssl/certs/certificate.crt'),
+    key: fs.readFileSync('ssl/private/private.key'),
   });
 
   const subscriptionId = req.data.resourceURI.replace(
@@ -280,8 +280,8 @@ app.use('/OAuthCallback', async (req, res, next) => {
     Authorization: `Bearer ${clientAccessToken}`,
   };
   const httpsAgent = new https.Agent({
-    cert: fs.readFileSync('ssl/certs/isharefood.com/certificate.crt'),
-    key: fs.readFileSync('ssl/private/isharefood.com/private.key'),
+    cert: fs.readFileSync('ssl/certs/certificate.crt'),
+    key: fs.readFileSync('ssl/private/private.key'),
   });
   if (authURI) {
     await axios.delete(authURI, {
