@@ -8,6 +8,7 @@ ADD package.json /opt/app/.
 ADD package-lock.json /opt/app/.
 RUN npm install
 
+ADD .env /opt/app/.env
 ADD ./src /opt/app/src
 ADD ./public /opt/app/public
 # ADD ./ssl /opt/app/ssl

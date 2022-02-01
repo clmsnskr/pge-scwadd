@@ -1,9 +1,11 @@
-const { default: axios } = require('axios');
-const https = require('https');
-const fs = require('fs');
-const express = require('express');
+require("dotenv").config();
+const { default: axios } = require("axios");
+const https = require("https");
+const fs = require("fs");
+const express = require("express");
 const app = express();
 const port = 3000;
+<<<<<<< HEAD
 const qs = require('qs');
 const R = require('ramda');
 const path = require('path');
@@ -19,6 +21,20 @@ const PROD_CLIENT_ID = '<SECRET_STRING>';
 
 const CLIENT_ID = QA_CLIENT_ID;
 const CLIENT_SECRET = QA_CLIENT_SECRET;
+=======
+const qs = require("qs");
+const R = require("ramda");
+const path = require("path");
+const {
+  CLIENT_ID,
+  CLIENT_SECRET,
+  PGE_API_BASE_URL,
+  REDIRECT_BASE_URL,
+  SMD_AUTH_BASE_URL,
+} = process.env;
+
+const xml2js = require("xml2js");
+>>>>>>> 5885573 (added sample config files)
 
 const divideBy = (d) => (n) => n / d;
 
@@ -27,59 +43,57 @@ const daysAgo = (num) =>
     new Date(today).setDate(today.getDate() - num)
   )(new Date());
 
-const today = new Date();
-
 const smdAuthParams = {
   client_id: CLIENT_ID,
-  redirect_uri: 'http://ec2-100-25-91-197.compute-1.amazonaws.com/OAuthCallback',
-  response_type: 'code',
-  login: 'guest',
+  redirect_uri: `${REDIRECT_BASE_URL}/OAuthCallback`,
+  response_type: "code",
+  login: "guest",
 };
 
 const withQuery = (params) => (url) =>
-  `${url}${Object.keys(params).length ? '?' : ''}${qs.stringify(params)}`;
+  `${url}${Object.keys(params).length ? "?" : ""}${qs.stringify(params)}`;
 
-const encode64 = (str) => Buffer.from(str, 'utf-8').toString('base64');
-const decode64 = (str) => Buffer.from(str, 'base64').toString('utf-8');
+const encode64 = (str) => Buffer.from(str, "utf-8").toString("base64");
+const decode64 = (str) => Buffer.from(str, "base64").toString("utf-8");
 
-app.get('/', (req, res) => {
+app.get("/", (req, res) => {
   const url = withQuery(smdAuthParams)(SMD_AUTH_BASE_URL);
   res.redirect(url);
 });
 
-app.get('/OAuthCallback', async (req, res, next) => {
+app.get("/OAuthCallback", async (req, res, next) => {
   const headers = {
-    'Content-Type': 'application/json',
+    "Content-Type": "application/json",
     Authorization: `Basic ${encode64(`${CLIENT_ID}:${CLIENT_SECRET}`)}`,
   };
 
   const httpsAgent = new https.Agent({
-    cert: fs.readFileSync('ssl/certs/certificate.crt'),
-    key: fs.readFileSync('ssl/private/private.key'),
+    cert: fs.readFileSync("ssl/certs/certificate.crt"),
+    key: fs.readFileSync("ssl/private/private.key"),
   });
 
   const data = {
-    grant_type: 'authorization_code',
+    grant_type: "authorization_code",
     code: req.query.code,
-    redirect_uri: 'http://ec2-100-25-91-197.compute-1.amazonaws.com/OAuthCallback',
+    redirect_uri: `${REDIRECT_BASE_URL}/OAuthCallback`,
   };
 
   const result = await axios.post(
-    withQuery(data)(`https://apiqa.pge.com/datacustodian/oauth/v2/token`),
+    withQuery(data)(`${PGE_API_BASE_URL}/datacustodian/oauth/v2/token`),
     // TODO: data payload could be necessary arg, currently works as params above ^^^
-    '',
+    "",
     { httpsAgent, headers }
   );
 
   //request for client_access_token to be used in destroying session
   const clientCredentialsData = {
-    grant_type: 'client_credentials',
+    grant_type: "client_credentials",
   };
   const clientAccessTokenResponse = await axios.post(
     withQuery(clientCredentialsData)(
-      `https://apiqa.pge.com/datacustodian/oauth/v2/token`
+      `${PGE_API_BASE_URL}/datacustodian/oauth/v2/token`
     ),
-    '',
+    "",
     { httpsAgent, headers }
   );
 
@@ -90,7 +104,7 @@ app.get('/OAuthCallback', async (req, res, next) => {
   next();
 });
 
-app.get('/OAuthCallback', async (req, res, next) => {
+app.get("/OAuthCallback", async (req, res, next) => {
   const accessToken = req.data.access_token;
 
   const headers = {
@@ -98,17 +112,17 @@ app.get('/OAuthCallback', async (req, res, next) => {
   };
 
   const httpsAgent = new https.Agent({
-    cert: fs.readFileSync('ssl/certs/certificate.crt'),
-    key: fs.readFileSync('ssl/private/private.key'),
+    cert: fs.readFileSync("ssl/certs/certificate.crt"),
+    key: fs.readFileSync("ssl/private/private.key"),
   });
 
   const subscriptionId = req.data.resourceURI.replace(
-    'https://apiqa.pge.com/GreenButtonConnect/espi/1_1/resource/Batch/Subscription/',
-    ''
+    `${PGE_API_BASE_URL}/GreenButtonConnect/espi/1_1/resource/Batch/Subscription/`,
+    ""
   );
 
   const usagePointIdResponse = await axios.get(
-    `https://apiqa.pge.com/GreenButtonConnect/espi/1_1/resource/Subscription/${subscriptionId}/UsagePoint`,
+    `${PGE_API_BASE_URL}/GreenButtonConnect/espi/1_1/resource/Subscription/${subscriptionId}/UsagePoint`,
     { httpsAgent, headers }
   );
 
@@ -121,13 +135,13 @@ app.get('/OAuthCallback', async (req, res, next) => {
   const twoDaysAgo = daysAgo(2);
   const ninetyOneDaysAgo = daysAgo(91);
   const firstQuarterParams = {
-    'published-max': twoDaysAgo,
-    'published-min': ninetyOneDaysAgo,
+    "published-max": twoDaysAgo,
+    "published-min": ninetyOneDaysAgo,
   };
 
   const firstQuarterEnergyUsageResponse = axios.get(
     withQuery(firstQuarterParams)(
-      `https://apiqa.pge.com/GreenButtonConnect/espi/1_1/resource/Batch/Subscription/${subscriptionId}/UsagePoint/${usagePointId}`
+      `${PGE_API_BASE_URL}/GreenButtonConnect/espi/1_1/resource/Batch/Subscription/${subscriptionId}/UsagePoint/${usagePointId}`
     ),
     { httpsAgent, headers }
   );
@@ -136,13 +150,13 @@ app.get('/OAuthCallback', async (req, res, next) => {
   const ninetyTwoDaysAgo = daysAgo(92);
   const OneHundredEightyTwoDaysAgo = daysAgo(182);
   const secondQuarterParams = {
-    'published-max': ninetyTwoDaysAgo,
-    'published-min': OneHundredEightyTwoDaysAgo,
+    "published-max": ninetyTwoDaysAgo,
+    "published-min": OneHundredEightyTwoDaysAgo,
   };
 
   const secondQuarterEnergyResponse = axios.get(
     withQuery(secondQuarterParams)(
-      `https://apiqa.pge.com/GreenButtonConnect/espi/1_1/resource/Batch/Subscription/${subscriptionId}/UsagePoint/${usagePointId}`
+      `${PGE_API_BASE_URL}/GreenButtonConnect/espi/1_1/resource/Batch/Subscription/${subscriptionId}/UsagePoint/${usagePointId}`
     ),
     { httpsAgent, headers }
   );
@@ -151,13 +165,13 @@ app.get('/OAuthCallback', async (req, res, next) => {
   const oneHundredEightyThreeDaysAgo = daysAgo(183);
   const twoHundredSeventyFourDaysAgo = daysAgo(274);
   const thirdQuarterParams = {
-    'published-max': oneHundredEightyThreeDaysAgo,
-    'published-min': twoHundredSeventyFourDaysAgo,
+    "published-max": oneHundredEightyThreeDaysAgo,
+    "published-min": twoHundredSeventyFourDaysAgo,
   };
 
   const thirdQuarterEnergyResponse = axios.get(
     withQuery(thirdQuarterParams)(
-      `https://apiqa.pge.com/GreenButtonConnect/espi/1_1/resource/Batch/Subscription/${subscriptionId}/UsagePoint/${usagePointId}`
+      `${PGE_API_BASE_URL}/GreenButtonConnect/espi/1_1/resource/Batch/Subscription/${subscriptionId}/UsagePoint/${usagePointId}`
     ),
     { httpsAgent, headers }
   );
@@ -166,13 +180,13 @@ app.get('/OAuthCallback', async (req, res, next) => {
   const twoHundredSeventyFiveDaysAgo = daysAgo(275);
   const threeHundredSixtyFiveDaysAgo = daysAgo(365);
   const fourthQuarterParams = {
-    'published-max': twoHundredSeventyFiveDaysAgo,
-    'published-min': threeHundredSixtyFiveDaysAgo,
+    "published-max": twoHundredSeventyFiveDaysAgo,
+    "published-min": threeHundredSixtyFiveDaysAgo,
   };
 
   const fourthQuarterEnergyResponse = axios.get(
     withQuery(fourthQuarterParams)(
-      `https://apiqa.pge.com/GreenButtonConnect/espi/1_1/resource/Batch/Subscription/${subscriptionId}/UsagePoint/${usagePointId}`
+      `${PGE_API_BASE_URL}/GreenButtonConnect/espi/1_1/resource/Batch/Subscription/${subscriptionId}/UsagePoint/${usagePointId}`
     ),
     { httpsAgent, headers }
   );
@@ -184,7 +198,7 @@ app.get('/OAuthCallback', async (req, res, next) => {
     firstQuarterEnergyUsageResponse,
   ]).then((values) => {
     const csvContent = [
-      'SA_UUID, Interval Timestamp, Delivered From Grid Value (Wh), Back To Grid Value (Wh)',
+      "SA_UUID, Interval Timestamp, Delivered From Grid Value (Wh), Back To Grid Value (Wh)",
     ];
     values.map((value, index) => {
       // convert XML to JSON
@@ -193,31 +207,31 @@ app.get('/OAuthCallback', async (req, res, next) => {
           throw err;
         }
 
-        const response = result['ns1:feed']['ns1:entry'].reduce(
+        const response = result["ns1:feed"]["ns1:entry"].reduce(
           (acc, item, index) => {
             if (
-              item['ns1:content'] &&
-              item['ns1:content'][0]['ns0:IntervalBlock']
+              item["ns1:content"] &&
+              item["ns1:content"][0]["ns0:IntervalBlock"]
             ) {
               // retrieves energyFlowIndicator to determine if interval value is DeliveredFromGrid OR BackToGrid
-              const energyFlowUrl = item['ns1:link'][0]['$'].href;
-              const energyFlowIndicatorString = energyFlowUrl.split('/')[12];
+              const energyFlowUrl = item["ns1:link"][0]["$"].href;
+              const energyFlowIndicatorString = energyFlowUrl.split("/")[12];
               const firstBufferString = decode64(energyFlowIndicatorString);
               const secondBufferString = decode64(firstBufferString);
               const energyFlowIndicator = R.compose(
                 (arr) => arr[arr.length - 1]
-              )(secondBufferString.split(':'));
+              )(secondBufferString.split(":"));
 
-              const intervalReading = item['ns1:content'][0][
-                'ns0:IntervalBlock'
-              ][0]['ns0:IntervalReading'].reduce((accIR, itemIR) => {
+              const intervalReading = item["ns1:content"][0][
+                "ns0:IntervalBlock"
+              ][0]["ns0:IntervalReading"].reduce((accIR, itemIR) => {
                 const itemStartTime =
-                  itemIR['ns0:timePeriod'][0]['ns0:start'][0];
-                const itemValue = itemIR['ns0:value'][0];
+                  itemIR["ns0:timePeriod"][0]["ns0:start"][0];
+                const itemValue = itemIR["ns0:value"][0];
 
                 const itemByStartTime = {
                   start: itemStartTime,
-                  ...(energyFlowIndicator === '19'
+                  ...(energyFlowIndicator === "19"
                     ? { generated: itemValue }
                     : { delivered: itemValue }),
                 };
@@ -248,22 +262,22 @@ app.get('/OAuthCallback', async (req, res, next) => {
 
         const outputDate = new Date()
           .toISOString()
-          .replace(/T/, ' ')
-          .replace(/\..+/, '');
+          .replace(/T/, " ")
+          .replace(/\..+/, "");
 
         if (index === 0) {
           csvContent.push(...csvLines);
-          if (!fs.existsSync('output')) fs.mkdirSync('output');
+          if (!fs.existsSync("output")) fs.mkdirSync("output");
           fs.writeFileSync(
             `output/${subscriptionId}-${outputDate}.csv`,
-            csvContent.join('\n')
+            csvContent.join("\n")
           );
         } else {
           //creates new line before appending values
-          fs.appendFileSync(`output/${subscriptionId}-${outputDate}.csv`, '\n');
+          fs.appendFileSync(`output/${subscriptionId}-${outputDate}.csv`, "\n");
           fs.appendFileSync(
             `output/${subscriptionId}-${outputDate}.csv`,
-            csvLines.join('\n')
+            csvLines.join("\n")
           );
         }
       });
@@ -272,7 +286,7 @@ app.get('/OAuthCallback', async (req, res, next) => {
   });
 });
 
-app.use('/OAuthCallback', async (req, res, next) => {
+app.use("/OAuthCallback", async (req, res, next) => {
   // For data access client level URI endpoints, the bearer CLIENT ACCESS TOKEN is required
   const clientAccessToken = req.data?.clientAccessToken;
   const authURI = req.data?.authorizationURI;
@@ -280,8 +294,8 @@ app.use('/OAuthCallback', async (req, res, next) => {
     Authorization: `Bearer ${clientAccessToken}`,
   };
   const httpsAgent = new https.Agent({
-    cert: fs.readFileSync('ssl/certs/certificate.crt'),
-    key: fs.readFileSync('ssl/private/private.key'),
+    cert: fs.readFileSync("ssl/certs/certificate.crt"),
+    key: fs.readFileSync("ssl/private/private.key"),
   });
   if (authURI) {
     await axios.delete(authURI, {
@@ -291,7 +305,7 @@ app.use('/OAuthCallback', async (req, res, next) => {
   }
 
   // user confirmation page
-  res.sendFile(path.join(__dirname, '../public/index.html'));
+  res.sendFile(path.join(__dirname, "../public/index.html"));
 });
 
 app.listen(port, (_) => {
