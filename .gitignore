@@ -1,6 +1,7 @@
 node_modules/
-output
 nginx/certs
-ssl/certs/*.*
-ssl/private/*.*
-output
+ssl/certs/*
+ssl/private/*
+output/*
+
+!empty
