@@ -2,5 +2,6 @@ node_modules/
 ssl/
 output
 nginx/certs
-ssl/
+ssl/certs/*.*
+ssl/private/*.*
 output
