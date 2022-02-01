@@ -18,7 +18,7 @@ services:
       - "3000:3000"
     # network_mode: "host"
     volumes:
-      - ./ssl/certs/:/etc/ssl/certs
-      - ./ssl/private/:/etc/ssl/private
+      - ./ssl/certs/:/opt/app/certs
+      - ./ssl/private/:/opt/app/private
 volumes:
   logvolume01: {}
