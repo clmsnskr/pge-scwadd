@@ -5,23 +5,6 @@ const fs = require("fs");
 const express = require("express");
 const app = express();
 const port = 3000;
-<<<<<<< HEAD
-const qs = require('qs');
-const R = require('ramda');
-const path = require('path');
-
-const xml2js = require('xml2js');
-
-const SMD_AUTH_BASE_URL = `https://sharemydataqa.pge.com/myAuthorization/`;
-const PGE_API_BASE_URL = `https://apiqa.pge.com`;
-
-const QA_CLIENT_ID = '<SECRET_STRING>';
-const QA_CLIENT_SECRET = '<SECRET_STRING>';
-const PROD_CLIENT_ID = '<SECRET_STRING>';
-
-const CLIENT_ID = QA_CLIENT_ID;
-const CLIENT_SECRET = QA_CLIENT_SECRET;
-=======
 const qs = require("qs");
 const R = require("ramda");
 const path = require("path");
@@ -34,7 +17,6 @@ const {
 } = process.env;
 
 const xml2js = require("xml2js");
->>>>>>> 5885573 (added sample config files)
 
 const divideBy = (d) => (n) => n / d;
 
