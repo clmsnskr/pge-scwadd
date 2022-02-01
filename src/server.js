@@ -31,7 +31,7 @@ const today = new Date();
 
 const smdAuthParams = {
   client_id: CLIENT_ID,
-  redirect_uri: 'http://scwadd.isharefood.com/OAuthCallback',
+  redirect_uri: 'http://ec2-100-25-91-197.compute-1.amazonaws.com/OAuthCallback',
   response_type: 'code',
   login: 'guest',
 };
@@ -61,7 +61,7 @@ app.get('/OAuthCallback', async (req, res, next) => {
   const data = {
     grant_type: 'authorization_code',
     code: req.query.code,
-    redirect_uri: 'http://scwadd.isharefood.com/OAuthCallback',
+    redirect_uri: 'http://ec2-100-25-91-197.compute-1.amazonaws.com/OAuthCallback',
   };
 
   const result = await axios.post(
