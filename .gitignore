@@ -1,5 +1,4 @@
 node_modules/
-nginx/conf/auth/*
 ssl/certs/*
 ssl/private/*
 output/*
