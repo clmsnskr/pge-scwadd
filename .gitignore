@@ -1,2 +1,4 @@
 node_modules/
 output
+nginx/certs
+ssl/

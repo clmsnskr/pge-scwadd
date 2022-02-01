@@ -3,7 +3,7 @@ const https = require('https');
 const fs = require('fs');
 const express = require('express');
 const app = express();
-const port = 3003;
+const port = 3000;
 const qs = require('qs');
 const R = require('ramda');
 const path = require('path');
@@ -54,8 +54,8 @@ app.get('/OAuthCallback', async (req, res, next) => {
   };
 
   const httpsAgent = new https.Agent({
-    cert: fs.readFileSync('ssl/certs/isharefood.com/certificate.crt'),
-    key: fs.readFileSync('ssl/private/isharefood.com/private.key'),
+    cert: fs.readFileSync('ssl/certs/certificate.crt'),
+    key: fs.readFileSync('ssl/private/private.key'),
   });
 
   const data = {

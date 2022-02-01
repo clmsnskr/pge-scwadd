@@ -1,0 +1,21 @@
+version: "3.9"  # optional since v1.27.0
+services:
+  web:
+    image: nginx:latest
+    container_name: my_nginx
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/conf/conf.d:/etc/nginx/conf.d
+      - ./ssl/certs/:/etc/ssl/certs
+      - ./ssl/private/:/etc/ssl/private
+      - logvolume01:/var/log
+  node:
+    build: .
+    container_name: scwadd
+    ports:
+      - "3000:3000"
+    # network_mode: "host"
+volumes:
+  logvolume01: {}
