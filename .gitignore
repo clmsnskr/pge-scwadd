@@ -3,7 +3,7 @@ nginx/conf/auth/*
 ssl/certs/*
 ssl/private/*
 output/*
-.env.sample
+.env
 
 !empty
 !*.sample
