@@ -8,8 +8,10 @@ services:
       - "443:443"
     volumes:
       - ./nginx/conf/conf.d:/etc/nginx/conf.d
+      - ./nginx/conf/auth/:/etc/nginx/auth
       - ./ssl/certs/:/etc/ssl/certs
       - ./ssl/private/:/etc/ssl/private
+      - ./output:/opt/app/output
       - logvolume01:/var/log
   node:
     build: .
@@ -20,5 +22,6 @@ services:
     volumes:
       - ./ssl/certs/:/opt/app/ssl/certs
       - ./ssl/private/:/opt/app/ssl/private
+      - ./output:/opt/app/output
 volumes:
   logvolume01: {}

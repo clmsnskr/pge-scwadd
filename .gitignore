@@ -1,6 +1,8 @@
 node_modules/
-output
-nginx/certs
-ssl/certs/*.*
-ssl/private/*.*
-output
+nginx/conf/auth/*
+ssl/certs/*
+ssl/private/*
+output/*
+
+!empty
+!*.sample
