@@ -246,7 +246,7 @@ app.get('/OAuthCallback', async (req, res, next) => {
           }, ${+entryObj.generated * 10 ** -3}`;
         });
 
-        const outputDate = today
+        const outputDate = new Date()
           .toISOString()
           .replace(/T/, ' ')
           .replace(/\..+/, '');
