@@ -54,7 +54,7 @@ echo "
 mkdir nginx/config/auth
 
 
-echo"" >> pge-scwadd/nginx/config/auth/htpasswd
+echo "" >> pge-scwadd/nginx/config/auth/htpasswd
 
 
 docker-compose up --build -d
