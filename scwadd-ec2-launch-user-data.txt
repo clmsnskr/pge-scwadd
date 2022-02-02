@@ -51,7 +51,7 @@ echo "
 " >> /pge-scwadd/ssl/private/private.key
 
 
-mkdir nginx/config/auth
+mkdir -p nginx/config/auth
 
 
 echo "" >> pge-scwadd/nginx/config/auth/htpasswd
