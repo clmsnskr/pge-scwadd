@@ -8,7 +8,11 @@ service docker start
 
 usermod -a -G docker ec2-user
 
+<<<<<<< HEAD
 curl -L https://github.com/docker/compose/releases/latest/download/docker-compose-$(uname -s)-$(uname -m) -o /us$
+=======
+curl -L https://github.com/docker/compose/releases/latest/download/docker-compose-$(uname -s)-$(uname -m) -o /usr/local/bin/docker-compose
+>>>>>>> b306ce975f26cb2029d04bf19c27e4ce8da6ef47
 
 chmod +x /usr/local/bin/docker-compose
 
