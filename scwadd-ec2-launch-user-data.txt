@@ -51,10 +51,10 @@ echo "
 " >> /pge-scwadd/ssl/private/private.key
 
 
-mkdir nginx/config/auth
+mkdir -p /pge-scwadd/nginx/conf/auth
 
-
-echo"" >> pge-scwadd/nginx/config/auth/htpasswd
+echo "
+" >> /pge-scwadd/nginx/conf/auth/htpasswd
 
 
 docker-compose up --build -d
